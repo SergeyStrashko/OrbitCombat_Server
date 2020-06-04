@@ -8,31 +8,50 @@ class Server {
 
         InetAddress serverAddress = null;
         try {
-            serverAddress = InetAddress.getByAddress(new byte[]{(byte) 10, (byte) 42, (byte) 0, (byte) 1});
+            serverAddress = InetAddress.getByName("192.168.1.100");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
 
-        try (ServerSocket serverSocket = new ServerSocket(port, 50, serverAddress)) {
+        while (true) {
+            try (ServerSocket serverSocket = new ServerSocket(port, 50, serverAddress)) {
 
-            System.out.println("Server is listening on port " + port);
+                System.out.println("Server is listening on port " + port);
+                Socket firstPlayer = serverSocket.accept();
+                System.out.println("First device connected");
+                Socket secondPlayer = serverSocket.accept();
+                System.out.println("Second device connected");
 
-            while (true) {
-                Socket socket = serverSocket.accept();
+                while (true) {
+                    InputStream input = firstPlayer.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-                System.out.println("New client connected");
+                    String recFirst = reader.readLine();
 
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                    if (recFirst == null) break;
 
-                String time = reader.readLine();
+                    input = secondPlayer.getInputStream();
+                    reader = new BufferedReader(new InputStreamReader(input));
 
-                System.out.println(time);
+                    String recSecond = reader.readLine();
+
+                    if (recSecond == null) break;
+
+                    OutputStream output = secondPlayer.getOutputStream();
+                    PrintWriter writer = new PrintWriter(output, true);
+
+                    writer.println(recFirst);
+
+                    output = firstPlayer.getOutputStream();
+                    writer = new PrintWriter(output, true);
+
+                    writer.println(recSecond);
+                }
+
+            } catch (IOException ex) {
+                System.out.println("Server exception: " + ex.getMessage());
+                ex.printStackTrace();
             }
-
-        } catch (IOException ex) {
-            System.out.println("Server exception: " + ex.getMessage());
-            ex.printStackTrace();
         }
     }
 }
